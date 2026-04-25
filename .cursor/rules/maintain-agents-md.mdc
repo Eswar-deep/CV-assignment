@@ -1,0 +1,58 @@
+---
+description: Read AGENTS.md at the start of every session and update it before ending.
+alwaysApply: true
+---
+
+# Maintain `AGENTS.md` every session
+
+`AGENTS.md` at the repo root is the persistent memory between Cursor sessions
+for this project. Treat it as a living changelog the user relies on.
+
+## At the start of every session
+
+1. **Read `AGENTS.md` first** before any other action, even if the user's
+   request seems unrelated. It contains the design constraints, the verified
+   environment (Python 3.9 conda env at
+   `C:\Users\91767\miniconda3\envs\bigdata\python.exe`), and the list of
+   pending tasks. Skipping it almost always wastes the user's time.
+2. Briefly acknowledge what state the project is in (one sentence is enough)
+   so the user knows you read it.
+
+## Before ending every session
+
+You **must** edit `AGENTS.md` to reflect what changed during the session.
+Do this proactively — do not wait for the user to ask. Specifically:
+
+- **Section 2 ("What is already built and tested"):** add any new files,
+  scripts, datasets, or measured numbers. Update tables if metrics changed.
+- **Section 3 ("What still needs to be done"):** remove items you completed,
+  add items you discovered, re-order by priority.
+- **Add a one-line entry** to a "Session log" subsection at the bottom of
+  the file (create it if missing) in the form:
+  `- YYYY-MM-DD: <one sentence on what this session changed>`
+- Keep the file under ~300 lines. Trim outdated content rather than letting
+  it grow forever.
+
+If the session made **no** repo changes (pure Q&A, planning only), still add
+a session-log line saying so — that itself is information the next agent
+needs.
+
+## When to update mid-session, not just at the end
+
+Update `AGENTS.md` immediately after any of:
+
+- Adding/deleting a script in `code/`.
+- Producing new measured metrics in `results/`.
+- Changing a design constraint (IoU threshold, model size, ROI shape).
+- Discovering a new failure mode worth documenting.
+
+This way, if the session is cut short by a token limit, the file is still
+current.
+
+## Do not
+
+- Rewrite the whole file from scratch — make targeted edits.
+- Change Section 5 ("Known design constraints") without explicit user
+  approval; those are locked by the proposal.
+- Commit the file silently. If you edit `AGENTS.md`, mention it in your
+  reply so the user knows to push.

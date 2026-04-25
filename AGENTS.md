@@ -196,3 +196,14 @@ C:\Users\91767\miniconda3\envs\bigdata\python.exe -c "from ultralytics import YO
 5. `presentation/slides_outline.md` — speaker scripts and timing.
 
 After reading those five, you have the full picture.
+
+---
+
+## 7. Session log
+
+Append a one-line entry per session here (newest at the bottom). Format:
+`- YYYY-MM-DD: <one sentence on what changed>`. The `.cursor/rules/maintain-agents-md.mdc`
+rule requires every agent to do this.
+
+- 2026-04-25: Built end-to-end pipeline (code, synthetic dataset, real metrics, report, slides, docs); initialized git repo and pushed to `github.com/Eswar-deep/CV-assignment`; created this `AGENTS.md` and the always-on rule that maintains it.
+
