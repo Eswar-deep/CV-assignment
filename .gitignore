@@ -1,0 +1,36 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+venv/
+env/
+.Python
+*.egg-info/
+.ipynb_checkpoints/
+
+# YOLO weights (auto-downloaded by ultralytics on first run, ~6 MB)
+*.pt
+!**/.gitkeep
+
+# OS / editor
+.DS_Store
+Thumbs.db
+desktop.ini
+.vscode/
+.idea/
+
+# Local secrets, if any
+.env
+*.local
+
+# LaTeX build artefacts (we keep main.tex and refs.bib in git)
+report/*.aux
+report/*.log
+report/*.out
+report/*.toc
+report/*.bbl
+report/*.blg
+report/*.fls
+report/*.fdb_latexmk
+report/*.synctex.gz

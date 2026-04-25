@@ -1,0 +1,11 @@
+# Tested on Python 3.9 (Windows / Miniconda) and Python 3.11 (macOS).
+# Install with:  pip install -r requirements.txt
+ultralytics>=8.1,<8.3
+opencv-python>=4.8,<4.11
+numpy>=1.24,<2
+torch>=2.0
+torchvision>=0.15
+tqdm>=4.66
+
+# Optional - only needed if you want to fetch sample videos from YouTube
+# yt-dlp>=2024.7.0
