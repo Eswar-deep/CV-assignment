@@ -57,6 +57,9 @@ def main():
     parser.add_argument("--image", help="Path to a single image.")
     parser.add_argument("--out", default="../data/rois.json",
                         help="Where to save the JSON ROI file.")
+    parser.add_argument("--load", default=None,
+                        help="Existing rois.json to load and extend "
+                             "(skips re-clicking the spots already defined).")
     args = parser.parse_args()
 
     if not args.video and not args.image:
@@ -68,6 +71,10 @@ def main():
 
     h, w = img.shape[:2]
     spots = []
+    if args.load:
+        with open(args.load) as f:
+            spots = [list(map(int, s)) for s in json.load(f)["spots"]]
+        print(f"[INFO] Loaded {len(spots)} existing spots from {args.load}")
     pending = []           # holds 0 or 1 corner clicks waiting to pair up
     last_mouse = None      # for live preview
 

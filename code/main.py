@@ -208,12 +208,16 @@ def main():
 
             live_fps = (len(inf_times) / sum(inf_times)
                         if sum(inf_times) > 0 else 0.0)
-            cv2.rectangle(frame, (10, 10), (430, 95), (0, 0, 0), -1)
+            open_spots = len(spots) - occupied
+            cv2.rectangle(frame, (10, 10), (430, 130), (0, 0, 0), -1)
             cv2.putText(frame, f"FPS: {live_fps:5.1f}", (20, 40),
                         cv2.FONT_HERSHEY_SIMPLEX, 0.8, (255, 255, 255), 2)
             cv2.putText(frame, f"Occupied: {occupied}/{len(spots)}",
                         (20, 75), cv2.FONT_HERSHEY_SIMPLEX, 0.8,
-                        (255, 255, 255), 2)
+                        (0, 0, 255), 2)
+            cv2.putText(frame, f"Open:     {open_spots}/{len(spots)}",
+                        (20, 110), cv2.FONT_HERSHEY_SIMPLEX, 0.8,
+                        (0, 220, 0), 2)
 
             writer.write(frame)
             if not args.no_show:

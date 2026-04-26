@@ -1,0 +1,23 @@
+[
+  {
+    "video": "..\\data\\videos\\utd_parking_sample_2_trimmed.mp4",
+    "size_mb": 7.37,
+    "resolution": "640x320",
+    "fps": 30.0,
+    "frames": 2493,
+    "duration_sec": 83.1,
+    "saved_frames": [
+      "..\\data\\frames\\utd_parking_sample_2_trimmed_start.jpg",
+      "..\\data\\frames\\utd_parking_sample_2_trimmed_mid.jpg",
+      "..\\data\\frames\\utd_parking_sample_2_trimmed_mid_annotated.jpg",
+      "..\\data\\frames\\utd_parking_sample_2_trimmed_end.jpg"
+    ],
+    "middle_detections": {
+      "total_vehicles": 8,
+      "by_class": {
+        "car": 8
+      },
+      "infer_ms": 3634.1
+    }
+  }
+]

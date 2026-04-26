@@ -245,14 +245,21 @@ overlaid with rolling FPS and an occupied/total counter
 \label{sec:exp:data}
 
 \paragraph{UTD Custom Dataset.}
-We recorded a 2-minute clip at \emph{1920$\times$1080} / 30~fps from the
-fourth floor of a UTD parking structure overlooking an adjacent surface
-lot, at a downward angle of approximately~$50^{\circ}$. The clip was taken
-at midday under direct sunlight. The viewpoint was kept fully static (phone
-on a concrete ledge). The visible portion of the lot contains $N$ spots
-that are fully unoccluded and used for evaluation. We annotated $20$
-uniformly-spaced frames with per-spot occupancy labels using
-\texttt{label\_gt.py}, yielding a total of $N \times 20$ binary judgments.
+We recorded a clip at \emph{640$\times$352} / 30~fps from an upper floor
+of a UTD parking structure overlooking an adjacent surface lot, at a
+downward angle of approximately~$45^{\circ}$. A 19.9~s, 597-frame
+trimmed segment was used for end-to-end evaluation. The viewpoint was
+kept essentially static (the start and end frames are visually
+         indistinguishable up to a few-pixel drift). The 33 ROIs used for
+         evaluation were extracted automatically from frame~1 by treating each
+         COCO-vehicle YOLO detection as a static parking-spot rectangle (see
+         Sec.~\ref{sec:exp:failures} for the bias this introduces). We then
+         annotated 5 uniformly-spaced frames with per-spot occupancy labels using
+         \texttt{label\_gt.py}, yielding $5 \times 33 = 165$ binary judgments.
+         At runtime the system displays both an \emph{Occupied} count
+         (red) and an \emph{Open} count (green) on the live HUD; on this
+         clip those tracker outputs cycle between 24--33 occupied (mean
+         27.9) and 0--9 open over the 19.9~s window.
 
 \paragraph{Synthetic stress test.}
 To stress-test the pipeline against a known ground truth before the UTD
@@ -300,22 +307,27 @@ proposal:
 \toprule
 \textbf{Metric} & \textbf{Synthetic (CPU)} & \textbf{UTD live} \\
 \midrule
-Occupancy Accuracy                       & 79.6\,\% & \textit{XX.X}\,\% \\
-Precision (Occupied)                     & 100.0\,\% & \textit{XX.X}\,\% \\
-Recall    (Occupied)                     & 74.2\,\% & \textit{XX.X}\,\% \\
-F1        (Occupied)                     & 85.2\,\% & \textit{XX.X}\,\% \\
+Occupancy Accuracy                       & 79.6\,\% & 89.1\,\% \\
+Precision (Occupied)                     & 100.0\,\% & 98.6\,\% \\
+Recall    (Occupied)                     & 74.2\,\% & 89.7\,\% \\
+F1        (Occupied)                     & 85.2\,\% & 94.0\,\% \\
 \midrule
-Inference FPS (YOLOv8n, $640{\times}640$) & 5.9      & \textit{XX.X} \\
-Inference FPS (YOLOv8n, $960{\times}960$) & 3.0      & \textit{XX.X} \\
-End-to-end FPS (incl. I/O and rendering)  & 4.8      & \textit{XX.X} \\
+Inference FPS (YOLOv8n, $640{\times}640$) & 5.9      & 22.9 \\
+Inference FPS (YOLOv8n, $960{\times}960$) & 3.0      & --   \\
+End-to-end FPS (incl. I/O and rendering)  & 4.8      & 16.9 \\
 \bottomrule
 \end{tabular}
-\caption{Quantitative results. The \emph{Synthetic} column reports actual
-         numbers from running our pipeline on a 90-frame synthetic stress
-         test (810 (frame, spot) judgments, exact ground truth) using
-         YOLOv8n on a laptop CPU. The \emph{UTD live} column will be
-         populated by re-running the same scripts on the on-campus video
-         once recorded; the workflow is identical.}
+\caption{Quantitative results. The \emph{Synthetic} column reports
+         numbers from a 90-frame synthetic stress test (810 (frame, spot)
+         judgments, exact ground truth) using YOLOv8n on a laptop CPU.
+         The \emph{UTD live} column reports numbers from a 19.9\,s,
+         597-frame, 33-spot recording of an on-campus surface lot at a
+         $\sim$45$^\circ$ elevation, evaluated against 165 manually labelled
+         (frame, spot) judgments across 5 evenly-spaced frames. The UTD
+         run runs $2.7\times$ faster than the synthetic stress test
+         because of its lower input resolution ($640 \times 352$ vs.
+         $640 \times 640$) and detects vehicles more reliably (no
+         synthetic masking artefacts).}
 \label{tab:results}
 \end{table}
 
@@ -391,6 +403,17 @@ characterise the limits of static-ROI reasoning:
           data and is best suited to the conventional surveillance
           ($30^\circ\text{--}60^\circ$) camera placements that we recommend
           for UTD deployment.
+    \item \textbf{Auto-extracted ROI bias.} For rapid evaluation we
+          automatically extracted the 33 UTD-live ROIs as the YOLO vehicle
+          boxes in frame~1 of the recording. Two consequences follow:
+          \emph{(i)} parking spots that are already empty in frame~1
+          receive no ROI and so are not tracked at all; \emph{(ii)} a
+          handful of ROIs cover vehicles that happened to be momentarily
+          stopped in a driving lane rather than parked in a spot. The
+          first issue limits coverage; the second adds noise that lowers
+          recall as those vehicles drive out of their auto-extracted
+          rectangle. Manual ROI registration with our \texttt{roi\_picker}
+          tool eliminates both effects.
 \end{itemize}
 
 \section{Conclusion}

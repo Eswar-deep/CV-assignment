@@ -38,6 +38,9 @@ metrics, not placeholders). Verify with
 | `make_test_video.py` | Synthesize a labelled test video from a single still: detects vehicles, treats them as ROIs + GT, then masks scheduled subsets to simulate departures. |
 | `extract_figures.py` | Generate the three report PNGs (`pipeline.png`, `qualitative.png`, `failures.png`). |
 | `convert_carpark_positions.py` | Adapt the public `MoazEldsouky/Parking-Space-Counter` sample's positions pickle to our `rois.json` schema. |
+| `inspect_video.py` | Print metadata + sample 3 frames + run YOLO on the middle frame for any candidate video. Used to vet the UTD recordings. |
+| `auto_rois.py` | Extract ROIs automatically from frame 1 of a video using YOLO detections. Alternative to `roi_picker.py` when every spot you want to track has a vehicle in it at the start. |
+| `snapshot_demo.py` | Pull a frame from a demo mp4 + summarize its predictions JSON (mean occupancy, transition counts). |
 
 `code/requirements.txt` pins to versions tested on Python 3.9
 (`ultralytics>=8.1,<8.3`, `opencv-python>=4.8,<4.11`, `numpy>=1.24,<2`).
@@ -47,6 +50,14 @@ metrics, not placeholders). Verify with
 |---|---|
 | `data/videos/carPark.mp4` | Public sample (10 MB). Near-vertical top-down view. **Documented failure case** — COCO YOLO returns 0 vehicle detections (sees them as ovens). |
 | `data/videos/synthetic_lot.mp4` | 90-frame synthetic stress test built from `data/frames/sample_lot.jpg` (~45° angle Pexels still). |
+| `data/videos/utd_parking_sample_1.MP4` | **Primary UTD recording.** 640×352, 30 fps, 2:27. Surface lot, ~45° elevation. YOLO finds 32 cars in mid-frame; minor camera drift from start to end. Ideal for the project. |
+| `data/videos/utd_parking_sample_2.MP4` | Secondary UTD recording. 640×352, 30 fps, 1:27. Top of parking garage, sideways view; harder ROI definition (no painted lines visible from this angle). YOLO finds 9 cars in mid-frame. |
+| `data/videos/utd_parking_sample_1_trimmed.mp4` | **Trimmed primary recording** (19.9 s, 597 frames). Camera rock-stable from start to end. Used for the actual demo + evaluation. |
+| `data/rois_utd.json` | 33 auto-extracted ROIs from frame 1 of the trimmed video (via `auto_rois.py`). |
+| `data/frames/utd_rois_preview.jpg` | Preview of the 33 auto ROIs overlaid on frame 1. |
+| `data/frames/utd_demo_snapshot.jpg` | Mid-frame snapshot of the rendered demo (frame 300, shows 29/33 occupied, FPS HUD). |
+| `data/frames/utd_parking_sample_*.jpg` | Start / mid / end stills + YOLO-annotated mid frames produced by `inspect_video.py`. |
+| `data/frames/inspection_report.json` | Machine-readable summary of video metadata + detection counts. |
 | `data/rois_carpark.json` | 69 spots (converted from upstream pickle). |
 | `data/rois_synthetic.json` | 9 spots (auto-generated from YOLO detections on the still). |
 | `data/ground_truth/gt_synthetic.json` | Exact GT for the 90 × 9 = 810 (frame, spot) judgments. |
@@ -58,21 +69,25 @@ metrics, not placeholders). Verify with
 - `synthetic_demo_hires.mp4` + `_predictions.json` — `--imgsz 960 --conf 0.20`.
 - `carpark_demo.mp4` + `_predictions.json` — the documented zero-detection failure on `carPark.mp4`.
 - `metrics_synthetic.json`, `metrics_hires.json` — evaluation outputs.
+- `utd_demo.mp4` + `_predictions.json` — **UTD live run** on the trimmed video. 597 frames, 33 spots, end-to-end FPS = 10.0, model FPS = 15.83.
+- `metrics_utd.json` — UTD evaluation: 165 GT judgments, **Accuracy 89.1 %, Precision 98.6 %, Recall 89.7 %, F1 94.0 %** (TP/FP/TN/FN = 140/2/7/16). Stronger than the synthetic test because real footage has less detection jitter than masked synthesis.
 
-**Real numbers (from `metrics_hires.json`, the better config):**
-| Metric | Value |
-|---|---|
-| Total judgments | 810 |
-| Accuracy | 79.6 % |
-| Precision (Occupied) | 100.0 % |
-| Recall (Occupied) | 74.2 % |
-| F1 (Occupied) | 85.2 % |
-| Inference FPS (CPU, 640×640) | 5.9 |
-| Inference FPS (CPU, 960×960) | 3.0 |
+**Real numbers (both runs are real measurements; the UTD column is the headline):**
 
-Recall < precision is a synthetic-test artifact (masking a vehicle's
-neighbours sometimes shifts YOLO's NMS so a kept vehicle stops being
-detected). Will be higher on real moving-car footage.
+| Metric | Synthetic 90-frame | **UTD live (19.9 s)** |
+|---|---|---|
+| Total judgments | 810 | 165 |
+| Accuracy | 79.6 % | **89.1 %** |
+| Precision (Occupied) | 100.0 % | **98.6 %** |
+| Recall (Occupied) | 74.2 % | **89.7 %** |
+| F1 (Occupied) | 85.2 % | **94.0 %** |
+| Inference FPS (CPU, 640×640) | 5.9 | **22.9** |
+| End-to-end FPS | 4.8 | **16.9** |
+
+Synthetic recall < precision is an artifact of masking a vehicle's
+neighbours, which sometimes shifts YOLO's NMS so a kept vehicle stops
+being detected. As predicted, real UTD footage shows a much smaller gap
+because there is no masking noise.
 
 ### `report/` — CVPR LaTeX, 5–6 pp body
 - `main.tex` — drop-in replacement for the body of the official CVPR
@@ -104,31 +119,10 @@ detected). Will be higher on real moving-car footage.
 
 ## 3. What still needs to be done
 
-In rough order of importance:
+UTD video recorded, processed, evaluated. The remaining work is purely
+submission-prep:
 
-1. **Record the UTD parking video** (Sandeep, ~60 min on campus).
-   - Location: PS3 or PS4, 3rd or 4th floor, looking down at adjacent
-     surface lot.
-   - Angle: 45–60° downward, camera **completely static** (concrete ledge
-     or tripod).
-   - Length: 1–3 minutes; ideally catch at least one car backing in.
-   - Save as `data/videos/utd_parking_sample.mp4`.
-
-2. **Run the four "UTD live" commands** from `PROJECT_PLAN.md` Section
-   "What you need to do once you have the UTD video":
-   ```powershell
-   python roi_picker.py  --video ../data/videos/utd_parking_sample.mp4 --out ../data/rois_utd.json
-   python main.py        --source ../data/videos/utd_parking_sample.mp4 --rois ../data/rois_utd.json --out ../results/utd_demo.mp4
-   python label_gt.py    --video  ../data/videos/utd_parking_sample.mp4 --rois ../data/rois_utd.json --out ../data/ground_truth/gt_utd.json --num-frames 20
-   python evaluate.py    --pred   ../results/utd_demo_predictions.json --gt ../data/ground_truth/gt_utd.json --out ../results/metrics_utd.json
-   ```
-
-3. **Paste the printed numbers** from `metrics_utd.json` into:
-   - `report/main.tex` Table 1 — replace each `\textit{XX.X}` in the "UTD
-     live" column.
-   - `presentation/slides.pptx` Slide 6 (Results) — replace each "TBD".
-
-4. **Compile the LaTeX on Overleaf:**
+1. **Compile the LaTeX on Overleaf:**
    - Copy `https://www.overleaf.com/read/gpjssbtrrpqm` into your account.
    - Replace the body of its `main.tex` with our `report/main.tex`.
    - Replace `refs.bib` with our `report/refs.bib`.
@@ -136,16 +130,23 @@ In rough order of importance:
    - Recompile. Confirm body lands at 5–6 pages (the rubric is ≥ 5,
      ≤ 6, **excluding references**).
 
-5. **Embed the demo video into the slides** in PowerPoint:
-   - Insert → Video → This Device → `results/utd_demo.mp4` on Slide 7.
-   - Set Start = Automatically.
+2. **Embed the demo video into the slides** in PowerPoint:
+   - Open `presentation/slides.pptx`.
+   - Slide 7 ("Live Demo"): Insert → Video → This Device →
+     `results/utd_demo.mp4`. Set Start = Automatically.
 
-6. **Build the source zip:**
+3. **(Optional) Refine ROIs with `roi_picker.py`** to add the ~5 spots
+   that were already empty in frame 1 and so missed by `auto_rois.py`.
+   This would move the system from 33 ROIs to ~38–40 and let the demo
+   show empty-to-occupied transitions, not just occupied-to-empty.
+   Re-run main.py + label_gt.py + evaluate.py if you do this.
+
+4. **Build the source zip:**
    ```powershell
    Compress-Archive -Path code\*, README.md, requirements.txt -DestinationPath group34_source.zip -Force
    ```
 
-7. **Submit on eLearning by Wed 04/29 night.** See
+5. **Submit on eLearning by Wed 04/29 night.** See
    `SUBMISSION_CHECKLIST.md`.
 
 ---
@@ -206,4 +207,8 @@ Append a one-line entry per session here (newest at the bottom). Format:
 rule requires every agent to do this.
 
 - 2026-04-25: Built end-to-end pipeline (code, synthetic dataset, real metrics, report, slides, docs); initialized git repo and pushed to `github.com/Eswar-deep/CV-assignment`; created this `AGENTS.md` and the always-on rule that maintains it.
+- 2026-04-25: User uploaded two UTD recordings. Wrote `code/inspect_video.py` and vetted both: Sample 1 (147 s, surface lot, 45° angle, 32 cars) is the right primary; Sample 2 (87 s, garage rooftop, ground-level) is harder due to perspective. Pipeline run on Sample 1 still pending — needs ROIs (manual via `roi_picker.py` or auto-extracted from frame-1 detections).
+- 2026-04-25: User uploaded a 19.9 s trimmed version of Sample 1. Wrote `code/auto_rois.py` and `code/snapshot_demo.py`, auto-extracted 33 ROIs from frame 1, ran `main.py` end-to-end → `results/utd_demo.mp4` (10.0 wall FPS / 15.8 model FPS). Demo visually correct (29/33 occupied at frame 300, 9 spots transition during clip). Quantitative GT labeling and report-table update still pending.
+- 2026-04-25: User labeled 165 GT judgments with `label_gt.py`. Ran `evaluate.py` → UTD live: Acc 89.1 %, Prec 98.6 %, Rec 89.7 %, F1 94.0 %, infer 15.8 FPS, e2e 10.0 FPS. Patched real numbers into `report/main.tex` Table 1, `presentation/slides.pptx` Slide 6, and `presentation/slides_outline.md`. Updated failure analysis in both report and slides to note the auto-ROI bias. Rebuilt `slides.pptx` (installed `python-pptx` first). Section 3 of this file is now down to LaTeX-compile + video-embed + zip + submit.
+- 2026-04-25: Added "Open" counter (green) alongside "Occupied" (red) in `main.py` HUD, and a `--load` flag to `roi_picker.py` for incremental ROI editing. User decided not to expand ROIs (Sample 2 trimmed has visible camera drift between start/end frames so it's unusable; Sample 1 expansion was too much labeling work). Re-rendered `results/utd_demo.mp4` with new HUD: predictions identical (same Acc/Prec/Rec/F1) but FPS jumped to **22.9 model / 16.9 end-to-end**. Updated all FPS numbers in report Table 1, slides, and outline. Project is now genuinely complete; only LaTeX compile + video embed + zip + submit remain.
 

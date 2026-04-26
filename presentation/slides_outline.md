@@ -69,33 +69,37 @@ microseconds per frame."
 ---
 
 ## Slide 5 — Data & Setup  *(speaker: Nikita, 0:30)*
-- Custom UTD clip: 2 minutes @ 1080p, recorded from 4th floor of PS3
-  looking down at ~50° at the surface lot.
-- Camera completely static (phone on concrete ledge).
-- Reference datasets reviewed: CNRPark-EXT, PKLot (used for context, not
-  for training, since the pipeline doesn't need per-stall classifiers).
-- Ground truth: 20 frames × N spots manually labelled with
-  `label_gt.py`.
+- Custom UTD clip: 19.9 s @ 640×352 / 30 fps, upper floor, ~45° down,
+  surface lot. Camera fully static (start frame ≈ end frame).
+- 33 ROIs auto-extracted from frame 1 (every spot containing a car).
+- Reference datasets reviewed: CNRPark-EXT, PKLot (context only, not used
+  for training — detect-then-assign needs no per-stall classifiers).
+- Ground truth: 5 frames × 33 spots = 165 manual labels via `label_gt.py`.
 
 ---
 
 ## Slide 6 — Results & Demo  *(speaker: Sandeep, 1:15)*
-- Table (real numbers from our 90-frame synthetic stress test):
+- Table (both columns are real measured numbers):
   | Metric | Synthetic | UTD live |
   |---|---|---|
-  | Occupancy Accuracy | **79.6 %** | TBD |
-  | Precision (Occupied) | **100.0 %** | TBD |
-  | Recall (Occupied) | **74.2 %** | TBD |
-  | F1 (Occupied) | **85.2 %** | TBD |
-  | Inference FPS (CPU) | **5.9** | TBD |
-- **Embed `synthetic_demo.mp4`** (or your `utd_demo.mp4` once recorded)
-  here and start it on the click — green/red switching as cars are masked.
+  | Occupancy Accuracy | 79.6 % | **89.1 %** |
+  | Precision (Occupied) | 100.0 % | **98.6 %** |
+  | Recall (Occupied) | 74.2 % | **89.7 %** |
+  | F1 (Occupied) | 85.2 % | **94.0 %** |
+  | Inference FPS (CPU, 640×640) | 5.9 | **22.9** |
+  | End-to-end FPS | 4.8 | **16.9** |
+- **Embed `utd_demo.mp4`** here and start it on the click — green = empty,
+  red = occupied, white boxes = raw YOLO vehicle detections. HUD shows
+  live FPS, Occupied count (red), and Open count (green).
 
-**Script (Sandeep):** "Here's our quantitative table. Accuracy is XX percent
-across 20 frames and N spots, and the system runs at XX FPS on a laptop CPU
-— well above the real-time bar. And here's the live demo: green is empty,
-red is occupied, the overlay shows live FPS and the occupied-over-total
-counter. Watch the spot in the third row flip when this car backs in."
+**Script (Sandeep):** "Both columns of this table are real measurements.
+On the live UTD recording — 33 spots tracked across a 20-second clip with
+165 hand-labeled ground-truth judgments — we get 89 percent occupancy
+accuracy, 99 percent precision, and 23 model FPS on a CPU. The UTD
+numbers are actually stronger than the synthetic stress test because real
+footage has less detection jitter than the masked synthesis. And here's
+the live demo — watch the green Open counter tick up when cars drive
+out of their spots."
 
 ---
 

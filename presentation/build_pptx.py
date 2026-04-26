@@ -154,14 +154,16 @@ def main():
         prs,
         "Data & Setup",
         [
-            "Custom UTD clip: 2 min @ 1080p, 4th floor of PS3, ~50 deg downward.",
-            "Camera fully static (phone on concrete ledge).",
-            "Reference datasets reviewed: CNRPark-EXT, PKLot (context only).",
-            "Ground truth: 20 frames x N spots, labelled with label_gt.py.",
+            "Custom UTD clip: 19.9 s @ 640x352 / 30 fps, upper floor, ~45 deg down.",
+            "Camera fully static (start frame ~ end frame).",
+            "33 ROIs auto-extracted from frame 1 (every spot with a car).",
+            "Ground truth: 5 frames x 33 spots = 165 manual labels.",
         ],
         notes="Speaker: Nikita (~30s). Mention that we INTENTIONALLY didn't "
               "train on CNRPark-EXT - the detect-then-assign pipeline doesn't "
-              "need per-stall classifiers.",
+              "need per-stall classifiers. Note that auto-extracted ROIs are "
+              "fast but miss already-empty spots in frame 1 - we discuss this "
+              "in failure analysis.",
     )
 
     add_table_slide(
@@ -169,19 +171,21 @@ def main():
         "Results",
         ["Metric", "Synthetic 90-frame", "UTD live"],
         [
-            ["Occupancy Accuracy",                "79.6 %",  "TBD"],
-            ["Precision (Occupied)",              "100.0 %", "TBD"],
-            ["Recall (Occupied)",                 "74.2 %",  "TBD"],
-            ["F1 (Occupied)",                     "85.2 %",  "TBD"],
-            ["Inference FPS (CPU, 640x640)",      "5.9",     "TBD"],
-            ["End-to-end FPS",                    "4.8",     "TBD"],
+            ["Occupancy Accuracy",                "79.6 %",  "89.1 %"],
+            ["Precision (Occupied)",              "100.0 %", "98.6 %"],
+            ["Recall (Occupied)",                 "74.2 %",  "89.7 %"],
+            ["F1 (Occupied)",                     "85.2 %",  "94.0 %"],
+            ["Inference FPS (CPU, 640x640)",      "5.9",     "22.9"],
+            ["End-to-end FPS",                    "4.8",     "16.9"],
         ],
-        notes="Speaker: Sandeep (~75s incl. demo). The Synthetic column is "
-              "REAL numbers from running our pipeline on a 90-frame stress "
-              "test (810 (frame, spot) judgments, exact GT). UTD column is "
-              "filled in once we run the same scripts on the campus video. "
-              "Read the headline numbers (Acc 79.6%, Precision 100%, FPS 6) "
-              "then click the demo video.",
+        notes="Speaker: Sandeep (~75s incl. demo). Both columns are REAL "
+              "numbers from running our pipeline. Synthetic = 90-frame stress "
+              "test (810 GT judgments, exact GT). UTD live = on-campus 19.9 s "
+              "recording (165 manually labelled GT judgments). UTD live is "
+              "FASTER (lower-res input) and STRONGER (real footage, less "
+              "detection jitter than synthetic). Headline numbers to read: "
+              "89% accuracy, 99% precision, 23 FPS model / 17 FPS end-to-end. "
+              "Then click the demo video on the next slide.",
     )
 
     add_bullet_slide(
@@ -203,7 +207,8 @@ def main():
             "Occlusion: foreground truck hides back-row spot -> false Occupied.",
             "Off-line parking: vehicle crosses painted line -> IoU < 0.5 -> false Empty.",
             "Camera drift: small physical shift misaligns every ROI.",
-            "All inherent to STATIC spatial reasoning - each is a future-work hook.",
+            "Top-down (~90 deg) views: COCO YOLO mis-classifies cars as appliances.",
+            "Auto-ROIs from frame 1 miss already-empty spots and pick up driving-lane vehicles.",
         ],
         notes="Speaker: Eswardeep (~30s). Pointing out failures earns marks; "
               "the rubric explicitly rewards 'discuss and analyze failures'.",
