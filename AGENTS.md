@@ -108,6 +108,10 @@ because there is no masking noise.
 - `build_pptx.py` — re-run `python build_pptx.py` if you change content.
 
 ### Top-level docs
+- `README.md` — public-facing project overview for humans (teammates,
+  instructor, future readers). Includes one-paragraph description,
+  headline results table, repo layout, quick start, and pointer to this
+  file for AI agents.
 - `PROJECT_PLAN.md` — status snapshot, exact commands the user still needs
   to run once they have UTD video.
 - `REALTIME_GUIDE.md` — webcam / IP Webcam phone / RTSP walkthrough with
@@ -211,4 +215,5 @@ rule requires every agent to do this.
 - 2026-04-25: User uploaded a 19.9 s trimmed version of Sample 1. Wrote `code/auto_rois.py` and `code/snapshot_demo.py`, auto-extracted 33 ROIs from frame 1, ran `main.py` end-to-end → `results/utd_demo.mp4` (10.0 wall FPS / 15.8 model FPS). Demo visually correct (29/33 occupied at frame 300, 9 spots transition during clip). Quantitative GT labeling and report-table update still pending.
 - 2026-04-25: User labeled 165 GT judgments with `label_gt.py`. Ran `evaluate.py` → UTD live: Acc 89.1 %, Prec 98.6 %, Rec 89.7 %, F1 94.0 %, infer 15.8 FPS, e2e 10.0 FPS. Patched real numbers into `report/main.tex` Table 1, `presentation/slides.pptx` Slide 6, and `presentation/slides_outline.md`. Updated failure analysis in both report and slides to note the auto-ROI bias. Rebuilt `slides.pptx` (installed `python-pptx` first). Section 3 of this file is now down to LaTeX-compile + video-embed + zip + submit.
 - 2026-04-25: Added "Open" counter (green) alongside "Occupied" (red) in `main.py` HUD, and a `--load` flag to `roi_picker.py` for incremental ROI editing. User decided not to expand ROIs (Sample 2 trimmed has visible camera drift between start/end frames so it's unusable; Sample 1 expansion was too much labeling work). Re-rendered `results/utd_demo.mp4` with new HUD: predictions identical (same Acc/Prec/Rec/F1) but FPS jumped to **22.9 model / 16.9 end-to-end**. Updated all FPS numbers in report Table 1, slides, and outline. Project is now genuinely complete; only LaTeX compile + video embed + zip + submit remain.
+- 2026-04-25: Wrote a top-level `README.md` for humans + teammates + future AI agents (project overview, headline results, repo layout, quick start, pointer to this file).
 
