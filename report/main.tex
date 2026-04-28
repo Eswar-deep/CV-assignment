@@ -245,21 +245,20 @@ overlaid with rolling FPS and an occupied/total counter
 \label{sec:exp:data}
 
 \paragraph{UTD Custom Dataset.}
-We recorded a clip at \emph{640$\times$352} / 30~fps from an upper floor
-of a UTD parking structure overlooking an adjacent surface lot, at a
-downward angle of approximately~$45^{\circ}$. A 19.9~s, 597-frame
-trimmed segment was used for end-to-end evaluation. The viewpoint was
-kept essentially static (the start and end frames are visually
-         indistinguishable up to a few-pixel drift). The 33 ROIs used for
-         evaluation were extracted automatically from frame~1 by treating each
-         COCO-vehicle YOLO detection as a static parking-spot rectangle (see
-         Sec.~\ref{sec:exp:failures} for the bias this introduces). We then
-         annotated 5 uniformly-spaced frames with per-spot occupancy labels using
-         \texttt{label\_gt.py}, yielding $5 \times 33 = 165$ binary judgments.
-         At runtime the system displays both an \emph{Occupied} count
-         (red) and an \emph{Open} count (green) on the live HUD; on this
-         clip those tracker outputs cycle between 24--33 occupied (mean
-         27.9) and 0--9 open over the 19.9~s window.
+We recorded a clip at \emph{848$\times$464} / 30~fps from an
+upper-floor walkway overlooking an adjacent on-campus surface lot, at
+a downward angle of approximately~$30^{\circ}$. The recording is
+41.1\,s long (1233 frames) and the camera was kept fully static
+(start and end frames are visually indistinguishable). The visible
+portion of the lot contains three rows: a fully-unoccluded front row
+of large spots and two partially-occluded back rows. We registered 17
+parking-spot ROIs covering all three rows with \texttt{roi\_picker.py}.
+For evaluation we annotated 5 uniformly-spaced frames with per-spot
+occupancy labels using \texttt{label\_gt.py}, yielding $5 \times 17 =
+85$ binary judgments. At runtime the system displays both an
+\emph{Occupied} count (red) and an \emph{Open} count (green) on the
+live HUD; on this clip the predicted occupancy cycles between 6 and 8
+spots (mean 7.3) over the 41.1\,s window.
 
 \paragraph{Synthetic stress test.}
 To stress-test the pipeline against a known ground truth before the UTD
@@ -307,27 +306,28 @@ proposal:
 \toprule
 \textbf{Metric} & \textbf{Synthetic (CPU)} & \textbf{UTD live} \\
 \midrule
-Occupancy Accuracy                       & 79.6\,\% & 89.1\,\% \\
-Precision (Occupied)                     & 100.0\,\% & 98.6\,\% \\
-Recall    (Occupied)                     & 74.2\,\% & 89.7\,\% \\
-F1        (Occupied)                     & 85.2\,\% & 94.0\,\% \\
+Occupancy Accuracy                       & 79.6\,\% & 97.6\,\% \\
+Precision (Occupied)                     & 100.0\,\% & 98.2\,\% \\
+Recall    (Occupied)                     & 74.2\,\% & 98.2\,\% \\
+F1        (Occupied)                     & 85.2\,\% & 98.2\,\% \\
 \midrule
-Inference FPS (YOLOv8n, $640{\times}640$) & 5.9      & 22.9 \\
+Inference FPS (YOLOv8n, $640{\times}640$) & 5.9      & 17.3 \\
 Inference FPS (YOLOv8n, $960{\times}960$) & 3.0      & --   \\
-End-to-end FPS (incl. I/O and rendering)  & 4.8      & 16.9 \\
+End-to-end FPS (incl. I/O and rendering)  & 4.8      & 15.7 \\
 \bottomrule
 \end{tabular}
 \caption{Quantitative results. The \emph{Synthetic} column reports
          numbers from a 90-frame synthetic stress test (810 (frame, spot)
          judgments, exact ground truth) using YOLOv8n on a laptop CPU.
-         The \emph{UTD live} column reports numbers from a 19.9\,s,
-         597-frame, 33-spot recording of an on-campus surface lot at a
-         $\sim$45$^\circ$ elevation, evaluated against 165 manually labelled
-         (frame, spot) judgments across 5 evenly-spaced frames. The UTD
-         run runs $2.7\times$ faster than the synthetic stress test
-         because of its lower input resolution ($640 \times 352$ vs.
-         $640 \times 640$) and detects vehicles more reliably (no
-         synthetic masking artefacts).}
+         The \emph{UTD live} column reports numbers from a 41\,s,
+         1233-frame, 17-spot recording of an on-campus surface lot at a
+         $\sim$30$^\circ$ elevation, evaluated against 85 manually
+         labelled (frame, spot) judgments across 5 evenly-spaced frames.
+         The detector reaches 97.6\,\% occupancy accuracy, with only two
+         per-judgment errors out of 85: one false negative and one false
+         positive on adjacent partially-occluded back-row spots in a
+         single frame, where a vehicle straddles the boundary between
+         two narrow ROIs.}
 \label{tab:results}
 \end{table}
 
@@ -403,17 +403,25 @@ characterise the limits of static-ROI reasoning:
           data and is best suited to the conventional surveillance
           ($30^\circ\text{--}60^\circ$) camera placements that we recommend
           for UTD deployment.
-    \item \textbf{Auto-extracted ROI bias.} For rapid evaluation we
-          automatically extracted the 33 UTD-live ROIs as the YOLO vehicle
-          boxes in frame~1 of the recording. Two consequences follow:
-          \emph{(i)} parking spots that are already empty in frame~1
-          receive no ROI and so are not tracked at all; \emph{(ii)} a
-          handful of ROIs cover vehicles that happened to be momentarily
-          stopped in a driving lane rather than parked in a spot. The
-          first issue limits coverage; the second adds noise that lowers
-          recall as those vehicles drive out of their auto-extracted
-          rectangle. Manual ROI registration with our \texttt{roi\_picker}
-          tool eliminates both effects.
+    \item \textbf{Partial-coverage ROIs in occluded back rows.} The
+          most common source of error during our UTD development was
+          insufficient ROI coverage of the visible vehicle. For back-row
+          spots whose painted boundaries are partially occluded by
+          front-row vehicles, an ROI that encompasses only the visible
+          spot floor is smaller than YOLO's bounding box around the
+          entire visible vehicle. The resulting IoU lands at
+          $\approx$0.4--0.49, just below the 0.5 threshold, and the
+          spot is reported \emph{Empty}. We quantified this effect via
+          three iterations of manual ROI registration on the same 17
+          UTD spots: tight ``visible-floor'' ROIs gave 63.8\,\% recall;
+          ROIs sized to the full image extent of each parked car lifted
+          recall to 79.7\,\%; and a third iteration that explicitly
+          enlarged the three foreground ROIs whose vehicles dominate
+          the frame lifted recall further to 98.2\,\%. The remaining
+          two errors (one false positive, one false negative) occur in
+          a single frame on adjacent narrow back-row spots where a
+          vehicle straddles the ROI boundary -- a true ambiguity that
+          neither auto- nor manual ROI registration can fully resolve.
 \end{itemize}
 
 \section{Conclusion}

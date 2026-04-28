@@ -50,14 +50,14 @@ metrics, not placeholders). Verify with
 |---|---|
 | `data/videos/carPark.mp4` | Public sample (10 MB). Near-vertical top-down view. **Documented failure case** — COCO YOLO returns 0 vehicle detections (sees them as ovens). |
 | `data/videos/synthetic_lot.mp4` | 90-frame synthetic stress test built from `data/frames/sample_lot.jpg` (~45° angle Pexels still). |
-| `data/videos/utd_parking_sample_1.MP4` | **Primary UTD recording.** 640×352, 30 fps, 2:27. Surface lot, ~45° elevation. YOLO finds 32 cars in mid-frame; minor camera drift from start to end. Ideal for the project. |
-| `data/videos/utd_parking_sample_2.MP4` | Secondary UTD recording. 640×352, 30 fps, 1:27. Top of parking garage, sideways view; harder ROI definition (no painted lines visible from this angle). YOLO finds 9 cars in mid-frame. |
-| `data/videos/utd_parking_sample_1_trimmed.mp4` | **Trimmed primary recording** (19.9 s, 597 frames). Camera rock-stable from start to end. Used for the actual demo + evaluation. |
-| `data/rois_utd.json` | 33 auto-extracted ROIs from frame 1 of the trimmed video (via `auto_rois.py`). |
-| `data/frames/utd_rois_preview.jpg` | Preview of the 33 auto ROIs overlaid on frame 1. |
-| `data/frames/utd_demo_snapshot.jpg` | Mid-frame snapshot of the rendered demo (frame 300, shows 29/33 occupied, FPS HUD). |
-| `data/frames/utd_parking_sample_*.jpg` | Start / mid / end stills + YOLO-annotated mid frames produced by `inspect_video.py`. |
+| `data/videos/utd_parking_sample.mp4` | **Primary UTD recording.** 848×464, 30 fps, 41.1 s, 1233 frames. Upper-floor walkway over a surface lot, ~30° elevation. Three rows visible: fully unoccluded front row + two partially-occluded back rows. YOLO finds 13 cars in mid-frame. Camera rock-steady (start frame ≡ end frame). |
+| `data/rois_utd.json` | 17 manually-drawn ROIs covering all three rows (via `roi_picker.py`). |
+| `data/frames/utd_rois_preview.jpg` | Preview of the 17 ROIs overlaid on frame 1. |
+| `data/frames/utd_demo_snapshot.jpg` | Mid-frame snapshot of the rendered demo (frame 600). |
+| `data/frames/utd_demo_snapshot_start.jpg` | Early-frame snapshot of the rendered demo (frame 30, shows 8/17 occupied). |
+| `data/frames/utd_parking_sample_*.jpg` | Start / mid / end stills + YOLO-annotated mid frame produced by `inspect_video.py`. |
 | `data/frames/inspection_report.json` | Machine-readable summary of video metadata + detection counts. |
+| `data/frames/carpark_diagnose_*.jpg` | Diagnostic frames showing why YOLO fails on `carPark.mp4` (sees cars as ovens/microwaves/refrigerators). |
 | `data/rois_carpark.json` | 69 spots (converted from upstream pickle). |
 | `data/rois_synthetic.json` | 9 spots (auto-generated from YOLO detections on the still). |
 | `data/ground_truth/gt_synthetic.json` | Exact GT for the 90 × 9 = 810 (frame, spot) judgments. |
@@ -69,25 +69,28 @@ metrics, not placeholders). Verify with
 - `synthetic_demo_hires.mp4` + `_predictions.json` — `--imgsz 960 --conf 0.20`.
 - `carpark_demo.mp4` + `_predictions.json` — the documented zero-detection failure on `carPark.mp4`.
 - `metrics_synthetic.json`, `metrics_hires.json` — evaluation outputs.
-- `utd_demo.mp4` + `_predictions.json` — **UTD live run** on the trimmed video. 597 frames, 33 spots, end-to-end FPS = 10.0, model FPS = 15.83.
-- `metrics_utd.json` — UTD evaluation: 165 GT judgments, **Accuracy 89.1 %, Precision 98.6 %, Recall 89.7 %, F1 94.0 %** (TP/FP/TN/FN = 140/2/7/16). Stronger than the synthetic test because real footage has less detection jitter than masked synthesis.
+- `utd_demo.mp4` + `_predictions.json` — **UTD live run** on `utd_parking_sample.mp4`. 1233 frames, 17 spots, end-to-end FPS = 15.7, model FPS = 17.3.
+- `metrics_utd.json` — UTD evaluation: 85 GT judgments, **Accuracy 97.6 %, Precision 98.2 %, Recall 98.2 %, F1 98.2 %** (TP/FP/TN/FN = 56/1/27/1). Only 2 errors total, both in a single frame on adjacent boundary-straddling back-row spots.
 
 **Real numbers (both runs are real measurements; the UTD column is the headline):**
 
-| Metric | Synthetic 90-frame | **UTD live (19.9 s)** |
+| Metric | Synthetic 90-frame | **UTD live (41 s)** |
 |---|---|---|
-| Total judgments | 810 | 165 |
-| Accuracy | 79.6 % | **89.1 %** |
-| Precision (Occupied) | 100.0 % | **98.6 %** |
-| Recall (Occupied) | 74.2 % | **89.7 %** |
-| F1 (Occupied) | 85.2 % | **94.0 %** |
-| Inference FPS (CPU, 640×640) | 5.9 | **22.9** |
-| End-to-end FPS | 4.8 | **16.9** |
+| Total judgments | 810 | 85 |
+| Accuracy | 79.6 % | **97.6 %** |
+| Precision (Occupied) | 100.0 % | **98.2 %** |
+| Recall (Occupied) | 74.2 % | **98.2 %** |
+| F1 (Occupied) | 85.2 % | **98.2 %** |
+| Inference FPS (CPU) | 5.9 | **17.3** |
+| End-to-end FPS | 4.8 | **15.7** |
 
-Synthetic recall < precision is an artifact of masking a vehicle's
-neighbours, which sometimes shifts YOLO's NMS so a kept vehicle stops
-being detected. As predicted, real UTD footage shows a much smaller gap
-because there is no masking noise.
+UTD has only **two errors in all 85 judgments** (TP/FP/TN/FN = 56/1/27/1):
+the FP and FN both occur in a single frame on adjacent narrow back-row
+spots where a vehicle straddles the ROI boundary. We arrived here by
+empirically confirming the partial-coverage-ROI failure mode through
+three iterations: tight "visible-floor" ROIs gave 63.8 % recall;
+proper car-sized ROIs lifted recall to 79.7 %; explicitly enlarging
+the three foreground-dominating ROIs brought recall to 98.2 %.
 
 ### `report/` — CVPR LaTeX, 5–6 pp body
 - `main.tex` — drop-in replacement for the body of the official CVPR
@@ -216,4 +219,8 @@ rule requires every agent to do this.
 - 2026-04-25: User labeled 165 GT judgments with `label_gt.py`. Ran `evaluate.py` → UTD live: Acc 89.1 %, Prec 98.6 %, Rec 89.7 %, F1 94.0 %, infer 15.8 FPS, e2e 10.0 FPS. Patched real numbers into `report/main.tex` Table 1, `presentation/slides.pptx` Slide 6, and `presentation/slides_outline.md`. Updated failure analysis in both report and slides to note the auto-ROI bias. Rebuilt `slides.pptx` (installed `python-pptx` first). Section 3 of this file is now down to LaTeX-compile + video-embed + zip + submit.
 - 2026-04-25: Added "Open" counter (green) alongside "Occupied" (red) in `main.py` HUD, and a `--load` flag to `roi_picker.py` for incremental ROI editing. User decided not to expand ROIs (Sample 2 trimmed has visible camera drift between start/end frames so it's unusable; Sample 1 expansion was too much labeling work). Re-rendered `results/utd_demo.mp4` with new HUD: predictions identical (same Acc/Prec/Rec/F1) but FPS jumped to **22.9 model / 16.9 end-to-end**. Updated all FPS numbers in report Table 1, slides, and outline. Project is now genuinely complete; only LaTeX compile + video embed + zip + submit remain.
 - 2026-04-25: Wrote a top-level `README.md` for humans + teammates + future AI agents (project overview, headline results, repo layout, quick start, pointer to this file).
+- 2026-04-26: Diagnosed the `carPark.mp4` 0/69 result. Wrote `code/diagnose_carpark.py`, confirmed YOLO with no class filter detects only oven, microwave, refrigerator, sink on the near-vertical top-down view. Saved diagnostic frames to `data/frames/carpark_diagnose_*.jpg`. Documented finding (already in failure analysis section of report); no code changes.
+- 2026-04-27: User uploaded a new `data/videos/utd_parking_sample.mp4` (848×464, 41 s, ~30° angle, three rows visible) and asked to scrap everything from the old Sample 1 and 2 work. Deleted 4 old videos, 16 inspection JPGs, and 8 derivative artifacts (rois, GT, demo, predictions, metrics, snapshots). User manually drew 17 ROIs with `roi_picker.py` (added `code/preview_rois.py` to verify them visually). First attempt produced thin slivers (along painted lines only); second attempt covered full car bodies. Ran end-to-end: **Acc 75.3 %, Prec 100 %, Rec 63.8 %, F1 77.9 %, 14.7 FPS** (85 GT judgments). The 100 % precision is the headline; recall gap is the partial-coverage-ROI failure mode (back-row spots occluded by front-row cars). Patched all numbers into `report/main.tex` (Table 1 + dataset paragraph + failure analysis), `presentation/slides.pptx` (rebuilt), `presentation/slides_outline.md`, and `README.md`.
+- 2026-04-27: User noticed visible green-over-car spots in the demo (the 21 false negatives manifesting visually) and redrew all 17 ROIs a third time with bigger boxes that fully encompass each car body. Re-rendered demo + relabeled all 85 GT judgments. Round-3 UTD numbers: Acc 85.9 %, Prec 100 %, Rec 79.7 %, F1 88.7 %, model 17.7 FPS / e2e 14.8 FPS (TP/FP/TN/FN = 47/0/26/12). Recall jumped +15.9 pp; F1 +10.8 pp; precision still perfect. Patched the new numbers everywhere (report Table 1 + dataset paragraph + failure analysis, slides + outline + build_pptx rebuilt, README).
+- 2026-04-27: Wrote `code/find_fn.py` to identify which spots account for the 12 remaining FN. Diagnosis: spot #4 (Acura) missed in 5/5 GT frames, #9 (Pacifica) in 3/5, #6 (Buick) in 2/5 — three foreground-dominating cars whose YOLO bbox was significantly larger than the ROI. User redrew all 17 ROIs a fourth time with markedly larger boxes for these three (especially #4 → 158x172). Re-rendered demo + relabeled GT. **Final UTD numbers: Acc 97.6 %, Prec 98.2 %, Rec 98.2 %, F1 98.2 %, model 17.3 FPS / e2e 15.7 FPS (TP/FP/TN/FN = 56/1/27/1).** Only 2 errors in 85 judgments, both in a single frame on adjacent narrow back-row spots where a vehicle straddles the ROI boundary. Demo HUD now shows 12/17 occupied (was 9/17). Patched all numbers into report (Table 1 + dataset paragraph + failure analysis with the empirical 64→80→98 % recall progression), slides + outline + build_pptx (rebuilt), README.
 

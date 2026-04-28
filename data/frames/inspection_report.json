@@ -1,23 +1,23 @@
 [
   {
-    "video": "..\\data\\videos\\utd_parking_sample_2_trimmed.mp4",
-    "size_mb": 7.37,
-    "resolution": "640x320",
+    "video": "..\\data\\videos\\utd_parking_sample.mp4",
+    "size_mb": 8.3,
+    "resolution": "848x464",
     "fps": 30.0,
-    "frames": 2493,
-    "duration_sec": 83.1,
+    "frames": 1233,
+    "duration_sec": 41.1,
     "saved_frames": [
-      "..\\data\\frames\\utd_parking_sample_2_trimmed_start.jpg",
-      "..\\data\\frames\\utd_parking_sample_2_trimmed_mid.jpg",
-      "..\\data\\frames\\utd_parking_sample_2_trimmed_mid_annotated.jpg",
-      "..\\data\\frames\\utd_parking_sample_2_trimmed_end.jpg"
+      "..\\data\\frames\\utd_parking_sample_start.jpg",
+      "..\\data\\frames\\utd_parking_sample_mid.jpg",
+      "..\\data\\frames\\utd_parking_sample_mid_annotated.jpg",
+      "..\\data\\frames\\utd_parking_sample_end.jpg"
     ],
     "middle_detections": {
-      "total_vehicles": 8,
+      "total_vehicles": 13,
       "by_class": {
-        "car": 8
+        "car": 13
       },
-      "infer_ms": 3634.1
+      "infer_ms": 2926.5
     }
   }
 ]

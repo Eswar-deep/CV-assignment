@@ -154,16 +154,15 @@ def main():
         prs,
         "Data & Setup",
         [
-            "Custom UTD clip: 19.9 s @ 640x352 / 30 fps, upper floor, ~45 deg down.",
-            "Camera fully static (start frame ~ end frame).",
-            "33 ROIs auto-extracted from frame 1 (every spot with a car).",
-            "Ground truth: 5 frames x 33 spots = 165 manual labels.",
+            "Custom UTD clip: 41 s @ 848x464 / 30 fps, upper-floor walkway, ~30 deg down.",
+            "Camera fully static (start frame = end frame).",
+            "17 parking-spot ROIs covering 3 rows, manually registered with roi_picker.py.",
+            "Ground truth: 5 frames x 17 spots = 85 manual labels.",
         ],
         notes="Speaker: Nikita (~30s). Mention that we INTENTIONALLY didn't "
               "train on CNRPark-EXT - the detect-then-assign pipeline doesn't "
-              "need per-stall classifiers. Note that auto-extracted ROIs are "
-              "fast but miss already-empty spots in frame 1 - we discuss this "
-              "in failure analysis.",
+              "need per-stall classifiers. The 17 spots cover a fully "
+              "unoccluded front row and two partially-occluded back rows.",
     )
 
     add_table_slide(
@@ -171,21 +170,19 @@ def main():
         "Results",
         ["Metric", "Synthetic 90-frame", "UTD live"],
         [
-            ["Occupancy Accuracy",                "79.6 %",  "89.1 %"],
-            ["Precision (Occupied)",              "100.0 %", "98.6 %"],
-            ["Recall (Occupied)",                 "74.2 %",  "89.7 %"],
-            ["F1 (Occupied)",                     "85.2 %",  "94.0 %"],
-            ["Inference FPS (CPU, 640x640)",      "5.9",     "22.9"],
-            ["End-to-end FPS",                    "4.8",     "16.9"],
+            ["Occupancy Accuracy",                "79.6 %",  "97.6 %"],
+            ["Precision (Occupied)",              "100.0 %", "98.2 %"],
+            ["Recall (Occupied)",                 "74.2 %",  "98.2 %"],
+            ["F1 (Occupied)",                     "85.2 %",  "98.2 %"],
+            ["Inference FPS (CPU)",               "5.9",     "17.3"],
+            ["End-to-end FPS",                    "4.8",     "15.7"],
         ],
         notes="Speaker: Sandeep (~75s incl. demo). Both columns are REAL "
-              "numbers from running our pipeline. Synthetic = 90-frame stress "
-              "test (810 GT judgments, exact GT). UTD live = on-campus 19.9 s "
-              "recording (165 manually labelled GT judgments). UTD live is "
-              "FASTER (lower-res input) and STRONGER (real footage, less "
-              "detection jitter than synthetic). Headline numbers to read: "
-              "89% accuracy, 99% precision, 23 FPS model / 17 FPS end-to-end. "
-              "Then click the demo video on the next slide.",
+              "numbers. Headline: 97.6% accuracy and 98.2% F1 on the on-campus "
+              "video, with only TWO total per-judgment errors out of 85 (one "
+              "false positive + one false negative on adjacent back-row spots "
+              "where a vehicle straddles the ROI boundary). 17 FPS on a laptop "
+              "CPU. Then click the demo video on the next slide.",
     )
 
     add_bullet_slide(
@@ -204,11 +201,10 @@ def main():
         prs,
         "Failure Analysis",
         [
-            "Occlusion: foreground truck hides back-row spot -> false Occupied.",
-            "Off-line parking: vehicle crosses painted line -> IoU < 0.5 -> false Empty.",
-            "Camera drift: small physical shift misaligns every ROI.",
+            "ROI sizing matters: tight ROIs -> low recall (64%); proper ROIs -> 98% recall.",
+            "Boundary-straddling vehicles cause both an FP and an FN on adjacent spots.",
             "Top-down (~90 deg) views: COCO YOLO mis-classifies cars as appliances.",
-            "Auto-ROIs from frame 1 miss already-empty spots and pick up driving-lane vehicles.",
+            "Camera drift: small physical shift misaligns every ROI.",
         ],
         notes="Speaker: Eswardeep (~30s). Pointing out failures earns marks; "
               "the rubric explicitly rewards 'discuss and analyze failures'.",

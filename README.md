@@ -32,22 +32,23 @@ Both columns are real numbers. The "UTD live" column is the on-campus recording
 this team made with a phone, evaluated against 165 manually-labeled ground-truth
 judgments.
 
-| Metric                         | Synthetic 90-frame test | **UTD live (19.9 s clip)** |
+| Metric                         | Synthetic 90-frame test | **UTD live (41 s clip)**   |
 |---|---|---|
-| Total (frame, spot) judgments  | 810                     | 165                        |
-| Occupancy Accuracy             | 79.6 %                  | **89.1 %**                 |
-| Precision (Occupied)           | 100.0 %                 | **98.6 %**                 |
-| Recall (Occupied)              | 74.2 %                  | **89.7 %**                 |
-| F1 (Occupied)                  | 85.2 %                  | **94.0 %**                 |
-| Inference FPS (CPU, 640&times;640) | 5.9                | **22.9**                   |
-| End-to-end FPS (incl. video I/O) | 4.8                  | **16.9**                   |
+| Total (frame, spot) judgments  | 810                     | 85                         |
+| Occupancy Accuracy             | 79.6 %                  | **97.6 %**                 |
+| Precision (Occupied)           | 100.0 %                 | **98.2 %**                 |
+| Recall (Occupied)              | 74.2 %                  | **98.2 %**                 |
+| F1 (Occupied)                  | 85.2 %                  | **98.2 %**                 |
+| Inference FPS (CPU)            | 5.9                     | **17.3**                   |
+| End-to-end FPS (incl. video I/O) | 4.8                   | **15.7**                   |
 
-The UTD live numbers are stronger than the synthetic stress test because real
-footage has less detection jitter than a synthetically-masked image stream. See
+The UTD live run produces only **two errors in 85 judgments** &mdash; one false
+positive and one false negative on adjacent back-row spots in a single frame
+where a vehicle straddles the ROI boundary. See
 [`results/metrics_utd.json`](results/metrics_utd.json) for the full output and
 [`results/utd_demo.mp4`](results/utd_demo.mp4) for the rendered demo.
 
-A snapshot of the rendered demo (frame 300 of 597):
+A snapshot of the rendered demo:
 
 ![demo snapshot](data/frames/utd_demo_snapshot.jpg)
 
@@ -87,17 +88,14 @@ labelled Open. The HUD reports live FPS and both counts.
 │
 ├── data/
 │   ├── videos/
-│   │   ├── utd_parking_sample_1.MP4          <- raw UTD recording, 2:27, primary
-│   │   ├── utd_parking_sample_1_trimmed.mp4  <- 19.9 s trim used for the demo + eval
-│   │   ├── utd_parking_sample_2.MP4          <- secondary recording, garage rooftop
-│   │   ├── utd_parking_sample_2_trimmed.mp4  <- secondary, has visible camera drift (unused)
-│   │   ├── carPark.mp4                       <- public sample (documents the top-down failure)
-│   │   └── synthetic_lot.mp4                 <- 90-frame synthetic stress test
+│   │   ├── utd_parking_sample.mp4    <- 41 s on-campus recording, used for demo + eval
+│   │   ├── carPark.mp4               <- public sample (documents the top-down failure)
+│   │   └── synthetic_lot.mp4         <- 90-frame synthetic stress test
 │   ├── frames/                       <- inspection JPGs + YOLO-annotated mid-frames
-│   ├── rois_utd.json                 <- 33 spots auto-extracted from frame 1
+│   ├── rois_utd.json                 <- 17 spots manually drawn with roi_picker.py
 │   ├── rois_carpark.json             <- 69 spots converted from the public sample
 │   ├── rois_synthetic.json           <- 9 spots from the synthetic test
-│   ├── ground_truth/gt_utd.json      <- 5 frames x 33 spots = 165 manual labels
+│   ├── ground_truth/gt_utd.json      <- 5 frames x 17 spots = 85 manual labels
 │   └── ground_truth/gt_synthetic.json
 │
 ├── results/
@@ -145,7 +143,7 @@ release.
 ### Reproduce the headline UTD numbers (no manual work)
 
 ```bash
-python code/main.py     --source data/videos/utd_parking_sample_1_trimmed.mp4 \
+python code/main.py     --source data/videos/utd_parking_sample.mp4 \
                         --rois   data/rois_utd.json \
                         --out    results/utd_demo.mp4 --no-show
 python code/evaluate.py --pred   results/utd_demo_predictions.json \
@@ -155,11 +153,11 @@ python code/evaluate.py --pred   results/utd_demo_predictions.json \
 
 Expected printout (verbatim):
 ```
-Total judgments      : 165
-Accuracy             : 89.09%
-Precision (occupied) : 98.59%
-Recall    (occupied) : 89.74%
-F1        (occupied) : 93.96%
+Total judgments      : 85
+Accuracy             : 97.65%
+Precision (occupied) : 98.25%
+Recall    (occupied) : 98.25%
+F1        (occupied) : 98.25%
 ```
 
 ### Run on your own footage
