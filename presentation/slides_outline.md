@@ -1,9 +1,21 @@
 # Group 34 — UTD Parking Spot Occupancy Detector
 ## Presentation outline (5 min content + 1 min Q&A) — Thursday 04/30
 
+> **Read this first:** the *story* you tell, slide-by-slide with full
+> talking points, lives in [`NARRATIVE.md`](NARRATIVE.md). This file is the
+> bullet *skeleton* that matches the auto-built `slides.pptx`.
+
 > **Hard rule from the project description:** Introduction + Method + Results
 > must finish in **5:00 or you lose points**. Rehearse with a phone timer.
-> Each speaker gets ~75 seconds. Aim to be 10 seconds *under* your slot.
+> Each speaker gets ~45 seconds. Aim to be 10 seconds *under* your slot.
+
+> **Generated visuals already embedded in `slides.pptx`** (paths relative to
+> repo root):
+> `report/figures/pipeline_visual.png`,
+> `report/figures/roi_labeling.png`,
+> `report/figures/gt_labeling.png`,
+> `report/figures/results_chart.png`,
+> `report/figures/precision_recall.png`.
 
 ---
 
